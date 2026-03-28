@@ -7,7 +7,11 @@ from backend.database import db
 from backend.routes.rooms import rooms_bp
 from backend.routes.bookings import bookings_bp
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 def create_app(config_overrides=None):
     app = Flask(__name__)

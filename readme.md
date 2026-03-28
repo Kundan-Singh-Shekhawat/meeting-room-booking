@@ -1,238 +1,45 @@
 # Meeting Room Booking System
 
-A full-stack web application that enables users to view meeting rooms, create bookings, and automatically prevents overlapping reservations through conflict detection logic.
+### 1. Project Overview
+This is a full-stack web application designed for booking meeting rooms efficiently. It allows users to view a list of available rooms, create new room definitions, and confidently book time slots for specific rooms while guaranteeing no double-bookings or time slot overlaps occur. It was built specifically as a self-contained software engineering assessment project.
 
----
+### 2. Tech Stack
+- **Backend:** Python, Flask, SQLAlchemy, SQLite
+- **Frontend:** React (.jsx components)
+- **Testing:** pytest
 
-## Project Structure
+### 3. Key Technical Decisions
+- **Why SQLite (not Postgres):** SQLite was explicitly chosen for its simplicity in local development and because it perfectly suites the scope of a fast bootstrapping assessment without requiring external deployment infrastructure.
+- **Why a unified API envelope `{data, error}`:** Standardizing all responses around a single JSON payload guarantees predictable parsing on the frontend and provides a single unwrap point, greatly reducing parsing logic errors for unexpected errors.
+- **Why conflict logic is isolated in `services.py`:** Extracting pure business logic away from Flask ensures it remains highly testable in isolation and separates mathematical/database logic from HTTP routing.
+- **Why routes are split into `rooms.py` and `bookings.py`:** A modular layout enforces the single-responsibility principle, prevents the application factory from bloating, and makes adding future API resources drastically easier.
 
-```
-meeting-room-booking/
-├── backend/
-│   ├── app.py                 # Flask app entry point
-│   ├── models.py              # SQLAlchemy ORM models
-│   ├── services.py            # Business logic & conflict detection
-│   ├── routes.py              # REST API endpoints
-│   └── requirements.txt
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── Rooms.jsx        # Displays all rooms
-│   │   │   ├── BookingForm.jsx  # Creates a booking
-│   │   │   └── Bookings.jsx     # Displays all bookings
-│   │   ├── services/
-│   │   │   └── api.js           # Fetch-based API layer
-│   │   └── App.jsx
-│   └── package.json
-└── .gitignore
-```
+### 4. Known Tradeoffs & Weaknesses
+- SQLite does not support concurrent writes — not suitable for production scaling.
+- No authentication or authorization — any user can blindly book or delete any room.
+- No pagination on list endpoints — performance will aggressively degrade as the database grows with large data.
+- No frontend input validation beyond what the API rejects post-flight.
 
----
-
-## Architecture
-
-```
-React (UI)  →  Flask REST API (Business Logic)  →  SQLite (Data Storage)
-```
-
----
-
-## Features
-
-- View all available meeting rooms
-- Create bookings for a specific room and time slot
-- Prevent overlapping bookings via conflict detection
-- View all existing bookings
-
----
-
-## Core Entities
-
-### Room
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | Integer | Primary key |
-| `name` | String | Room name (must not be empty) |
-| `capacity` | Integer | Maximum capacity (must be a positive integer) |
-
-### Booking
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | Integer | Primary key |
-| `room_id` | Integer | Foreign key referencing Room |
-| `start_time` | String | Format: `HH:MM` |
-| `end_time` | String | Format: `HH:MM` |
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/rooms` | Retrieve all rooms |
-| `POST` | `/rooms` | Create a new room |
-| `GET` | `/bookings` | Retrieve all bookings |
-| `POST` | `/bookings` | Create a booking (with conflict detection) |
-
-### Example — Create a Booking
-
-**Request**
-```json
-POST /bookings
-{
-  "room_id": 1,
-  "start_time": "09:00",
-  "end_time": "10:30"
-}
-```
-
-**Success Response** `201 Created`
-```json
-{
-  "id": 5,
-  "room_id": 1,
-  "start_time": "09:00",
-  "end_time": "10:30"
-}
-```
-
-**Conflict Response** `409 Conflict`
-```json
-{
-  "error": "Booking conflicts with an existing reservation."
-}
-```
-
----
-
-## Conflict Detection Logic
-
-A new booking is rejected if it overlaps with any existing booking for the same room.
-
-The overlap condition is evaluated as follows:
-
-```
-NOT (new_end <= existing_start OR new_start >= existing_end)
-```
-
-Two bookings are considered non-overlapping only when the new booking ends at or before the existing one starts, or begins at or after the existing one ends. Any other case is treated as a conflict and the request is rejected.
-
----
-
-## Validation Rules
-
-| Field | Rule |
-|-------|------|
-| Room name | Must not be empty |
-| Capacity | Must be a positive integer |
-| Start time | Must be in `HH:MM` format |
-| End time | Must be in `HH:MM` format |
-| Time order | `start_time` must be earlier than `end_time` |
-| Booking slot | Must not overlap with any existing booking for the same room |
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React (functional components, `useState`, `useEffect`) |
-| Backend | Python, Flask (REST API) |
-| Database | SQLite via SQLAlchemy ORM |
-| API Communication | `fetch()` in `services/api.js` |
-| Cross-Origin Requests | CORS enabled on Flask |
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- Node.js 16+ and npm
-
----
-
-### Backend Setup
-
+### 5. How to Run
+**Backend:** 
 ```bash
-# 1. Navigate to the backend directory
-cd backend
-
-# 2. Create and activate a virtual environment
-python -m venv venv
-
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Start the Flask development server
-python app.py
+PYTHONPATH=. .venv/bin/python backend/app.py
 ```
+*(Runs securely on localhost:5000)*
 
-The backend server will be available at `http://127.0.0.1:5000`.
-
----
-
-### Frontend Setup
-
+**Frontend:** 
 ```bash
-# 1. Navigate to the frontend directory
-cd frontend
+cd frontend && npm start
+```
+*(Runs intuitively on localhost:3000)*
 
-# 2. Install dependencies
-npm install
-
-# 3. Start the React development server
-npm start
+### 6. Running Tests
+```bash
+PYTHONPATH=. .venv/bin/pytest backend/tests/
 ```
 
-The frontend will be available at `http://localhost:3000`.
-
-> Note: The Flask backend must be running before launching the frontend.
-
----
-
-## Known Limitations
-
-- No authentication or user management system
-- Time values are stored as strings (`HH:MM`) rather than proper `datetime` objects
-- No timezone support
-- Minimal UI with no styling framework or calendar view
-
----
-
-## Future Improvements
-
-- [ ] Implement JWT-based authentication and user login
-- [ ] Migrate to `datetime` objects for more robust time handling
-- [ ] Develop a calendar-based booking interface
-- [ ] Introduce email or push notifications for booking reminders
-- [ ] Improve UI/UX with a styling framework such as Tailwind CSS
-- [ ] Add timezone awareness
-
----
-
-## AI Usage
-
-- AI tooling was used for scaffolding and boilerplate generation
-- Core logic, particularly conflict detection, was manually reviewed and validated
-- Code conventions were kept simple and readable, with no unnecessary abstractions
-
----
-
-## Design Philosophy
-
-The project prioritises correctness and readability over complexity. Business logic is separated from route handlers through a basic service layer, and invalid states are prevented through strict input validation at the API level.
-
----
-
-## Author
-
-**Kundan Singh Shekhawat**  
-GitHub: [@Kundan-Singh-Shekhawat](https://github.com/Kundan-Singh-Shekhawat)
+### 7. AI Usage
+- **Tool used:** Gemini (Antigravity Agent)
+- **What it was used for:** Scaffolding the route structure, generating the exhaustive test cases, refactoring the legacy monolith into MVC, and producing these developer documents.
+- **How output was reviewed:** Every generated file was read line by line. The time-slot conflict logic was manually verified, and entire test suites were aggressively run after each iteration.
+- **What was NOT delegated to AI:** Final overarching business logic decisions and the strict architectural splitting rules.

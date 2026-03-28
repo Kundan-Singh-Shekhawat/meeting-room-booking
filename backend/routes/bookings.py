@@ -1,5 +1,9 @@
+import logging
 from flask import Blueprint, request, jsonify, abort
+from werkzeug.exceptions import HTTPException
 from backend.services import create_booking_service, list_bookings_service
+
+logger = logging.getLogger(__name__)
 
 bookings_bp = Blueprint("bookings", __name__)
 
@@ -17,23 +21,34 @@ def create_booking():
     if not start_time or not end_time:
         abort(400, description="Start and end time are required")
 
-    booking, error = create_booking_service(room_id, start_time, end_time)
-    if error:
-        message, code = error
-        abort(code, description=message)
+    try:
+        booking, error = create_booking_service(room_id, start_time, end_time)
+        if error:
+            message, code = error
+            if code == 409:
+                logger.warning(f"Conflict detected for room_id={room_id} at {start_time}-{end_time}")
+            elif code == 404:
+                logger.warning(f"Room not found for room_id={room_id}")
+            abort(code, description=message)
 
-    return jsonify({
-        "data": {
-            "message": "Booking created",
-            "booking": {
-                "id": booking.id,
-                "room_id": booking.room_id,
-                "start_time": booking.start_time,
-                "end_time": booking.end_time
-            }
-        },
-        "error": None
-    }), 201
+        logger.info(f"Booking successfully created for room_id={room_id} from {start_time} to {end_time}")
+        return jsonify({
+            "data": {
+                "message": "Booking created",
+                "booking": {
+                    "id": booking.id,
+                    "room_id": booking.room_id,
+                    "start_time": booking.start_time,
+                    "end_time": booking.end_time
+                }
+            },
+            "error": None
+        }), 201
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        logger.error(f"Error processing booking: {str(e)}")
+        abort(500, description="Internal server error")
 
 
 @bookings_bp.route("/bookings", methods=["GET"])
