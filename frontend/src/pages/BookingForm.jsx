@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { createBooking } from "../services/api";
 
+/**
+ * Component providing a form to book a room.
+ * @returns {JSX.Element}
+ */
 function BookingForm() {
   const [roomId, setRoomId] = useState("");
   const [startTime, setStartTime] = useState("");

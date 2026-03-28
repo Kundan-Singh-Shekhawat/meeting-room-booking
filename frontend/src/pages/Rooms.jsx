@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import { getRooms } from "../services/api";
 
+/**
+ * Component to list all available rooms.
+ * @returns {JSX.Element}
+ */
 function Rooms() {
   const [rooms, setRooms] = useState([]);
 
@@ -10,9 +14,11 @@ function Rooms() {
   }, []);
 
   async function fetchRooms() {
-    const data = await getRooms();
-    console.log(data);
-    setRooms(data);
+    const json = await getRooms();
+    console.log(json);
+    if (json.data) {
+      setRooms(json.data);
+    }
   }
 
   return (

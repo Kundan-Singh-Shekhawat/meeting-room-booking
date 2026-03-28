@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import { getBookings } from "../services/api";
 
+/**
+ * Component to list all existing bookings.
+ * @returns {JSX.Element}
+ */
 function Bookings() {
   const [bookings, setBookings] = useState([]);
 
@@ -10,8 +14,10 @@ function Bookings() {
   }, []);
 
   async function fetchBookings() {
-    const data = await getBookings();
-    setBookings(data);
+    const json = await getBookings();
+    if (json.data) {
+      setBookings(json.data);
+    }
   }
 
   return (
